@@ -59,7 +59,7 @@ def main(argv):
         print("Using Weights File: ", WEIGHTS_FILE)
         assert(os.path.exists(WEIGHTS_FILE))
 
-    print("Training epochs: " NUM_EPOCHS)
+    print("Training epochs: ", NUM_EPOCHS)
 
     if(QUICK_MODE):
         print("Quick mode enabled.")
