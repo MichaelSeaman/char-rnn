@@ -110,7 +110,7 @@ def main(argv):
     model.add(Dense(vocab))
     model.add(Activation('softmax'))
     optimizer = RMSprop(lr=0.1)
-    if(CONTINUE_FROM_PREV):
+    if(WEIGHTS_FILE):
         model.load_weights(WEIGHTS_FILE)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
     model.summary()
