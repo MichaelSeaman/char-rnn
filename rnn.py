@@ -27,9 +27,9 @@ import getopt
 import time
 
 TRAIN_FILE = '/home/ubuntu/Datasets/quote.txt'
-WEIGHTS_FILE = './weights/'
+WEIGHTS_FILE = ''
 NUM_EPOCHS = 30
-CONTINUE_FROM_PREV = False
+QUICK_MODE = False
 
 def main(argv):
     global TRAIN_FILE
@@ -37,7 +37,7 @@ def main(argv):
     global NUM_EPOCHS
     global CONTINUE_FROM_PREV
     try:
-        opts, args = getopt.getopt(argv, 't:e:cw:', ['trainFile=','epochs=','continue','weightsFile='])
+        opts, args = getopt.getopt(argv, 't:e:qw:', ['trainFile=','epochs=','quickmode' ,'weightsFile='])
         for opt, arg in opts:
             if opt in ('-t', '--trainFile'):
                 TRAIN_FILE = arg
@@ -45,8 +45,8 @@ def main(argv):
                 WEIGHTS_FILE = arg
             elif opt in ('-e', '--epochs'):
                 NUM_EPOCHS = int(arg)
-            elif opt in ('-c', '--continue'):
-                CONTINUE_FROM_PREV = True
+            elif opt in ('-q', '--quickmode'):
+                QUICK_MODE = True
     except getopt.GetoptError as e:
         print("No train/weights file provided")
         print(e)
@@ -54,10 +54,15 @@ def main(argv):
     print("Using Training File: ", TRAIN_FILE)
     assert(os.path.exists(TRAIN_FILE))
 
-    if(CONTINUE_FROM_PREV):
+    if(WEIGHTS_FILE):
         print("Continuing from previous training.")
         print("Using Weights File: ", WEIGHTS_FILE)
         assert(os.path.exists(WEIGHTS_FILE))
+
+    print("Training epochs: " NUM_EPOCHS)
+
+    if(QUICK_MODE):
+        print("Quick mode enabled.")
 
     text = open(TRAIN_FILE).read().lower()
     n_chars = len(text)
@@ -89,6 +94,10 @@ def main(argv):
             X[i,t, char_to_idx[char]] = 1
         y[i, char_to_idx[ next_chars[i] ]] = 1
 
+    if(QUICK_MODE):
+        X = X[:1000]
+        y = y[:1000]
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 
@@ -113,7 +122,10 @@ def main(argv):
     generate_text = Generate_Text(gen_text_len=100, idx_to_char=idx_to_char, char_to_idx=char_to_idx,text=text, maxlen=maxlen, vocab=vocab)
     esCallback = EarlyStopping(min_delta=0, patience=10, verbose=1)
     hisCallback = History()
-    callbacks_list = [checkpoint, generate_text, hisCallback]
+    if(QUICK_MODE):
+        callbacks_list = [checkpoint, hisCallback]
+    else:
+        callbacks_list = [checkpoint, generate_text, hisCallback]
 
     if not os.path.exists('weights'):
         os.makedirs('weights')
