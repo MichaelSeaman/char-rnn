@@ -113,7 +113,7 @@ def main(argv):
     generate_text = Generate_Text(gen_text_len=100, idx_to_char=idx_to_char, char_to_idx=char_to_idx,text=text, maxlen=maxlen, vocab=vocab)
     esCallback = EarlyStopping(min_delta=0, patience=10, verbose=1)
     hisCallback = History()
-    callbacks_list = [checkpoint, hisCallback]
+    callbacks_list = [checkpoint, generate_text, hisCallback]
 
     if not os.path.exists('weights'):
         os.makedirs('weights')
