@@ -30,6 +30,8 @@ TRAIN_FILE = '/home/ubuntu/Datasets/quote.txt'
 WEIGHTS_FILE = ''
 NUM_EPOCHS = 30
 QUICK_MODE = False
+LEARNING_RATE = .001
+DECAY = .2
 
 def main(argv):
     global TRAIN_FILE
@@ -37,7 +39,7 @@ def main(argv):
     global NUM_EPOCHS
     global QUICK_MODE
     try:
-        opts, args = getopt.getopt(argv, 't:e:qw:', ['trainFile=','epochs=','quickmode' ,'weightsFile='])
+        opts, args = getopt.getopt(argv, 't:e:qw:l:d:', ['trainFile=','epochs=','quickmode' ,'weightsFile=','learningRate=','decay='])
         for opt, arg in opts:
             if opt in ('-t', '--trainFile'):
                 TRAIN_FILE = arg
@@ -47,6 +49,10 @@ def main(argv):
                 NUM_EPOCHS = int(arg)
             elif opt in ('-q', '--quickmode'):
                 QUICK_MODE = True
+            elif opt in ('-l', '--learningRate'):
+                LEARNING_RATE = float(arg)
+            elif opt in ('-d', '--decay'):
+                DECAY = float(arg)
     except getopt.GetoptError as e:
         print("No train/weights file provided")
         print(e)
@@ -60,6 +66,9 @@ def main(argv):
         assert(os.path.exists(WEIGHTS_FILE))
 
     print("Training epochs: ", NUM_EPOCHS)
+    print("Learning Rate: ", LEARNING_RATE)
+    print("Decay: ", DECAY)
+
 
     if(QUICK_MODE):
         print("Quick mode enabled.")
@@ -109,7 +118,7 @@ def main(argv):
     model.add(Dropout(0.2))
     model.add(Dense(vocab))
     model.add(Activation('softmax'))
-    optimizer = RMSprop(lr=0.1)
+    optimizer = RMSprop(lr=LEARNING_RATE, decay=DECAY)
     if(WEIGHTS_FILE):
         model.load_weights(WEIGHTS_FILE)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
