@@ -35,7 +35,7 @@ def main(argv):
     global TRAIN_FILE
     global WEIGHTS_FILE
     global NUM_EPOCHS
-    global CONTINUE_FROM_PREV
+    global QUICK_MODE
     try:
         opts, args = getopt.getopt(argv, 't:e:qw:', ['trainFile=','epochs=','quickmode' ,'weightsFile='])
         for opt, arg in opts:
