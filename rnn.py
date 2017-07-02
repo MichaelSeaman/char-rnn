@@ -31,13 +31,15 @@ WEIGHTS_FILE = ''
 NUM_EPOCHS = 30
 QUICK_MODE = False
 LEARNING_RATE = .001
-DECAY = .2
+DECAY = .1
 
 def main(argv):
     global TRAIN_FILE
     global WEIGHTS_FILE
     global NUM_EPOCHS
     global QUICK_MODE
+    global DECAY
+    global LEARNING_RATE
     try:
         opts, args = getopt.getopt(argv, 't:e:qw:l:d:', ['trainFile=','epochs=','quickmode' ,'weightsFile=','learningRate=','decay='])
         for opt, arg in opts:
@@ -113,8 +115,8 @@ def main(argv):
     # Building a simple LSTM
     print("Building model")
     model = Sequential()
-    model.add(LSTM(128, input_shape=(maxlen, vocab), return_sequences=True ))
-    model.add(LSTM(128, input_shape=(maxlen, vocab)))
+    model.add(LSTM(128, activation='relu', input_shape=(maxlen, vocab), return_sequences=True ))
+    model.add(LSTM(128, activation='relu', input_shape=(maxlen, vocab)))
     model.add(Dropout(0.2))
     model.add(Dense(vocab))
     model.add(Activation('softmax'))
