@@ -115,8 +115,8 @@ def main(argv):
     # Building a simple LSTM
     print("Building model")
     model = Sequential()
-    model.add(LSTM(128, activation='relu', input_shape=(maxlen, vocab), return_sequences=True ))
-    model.add(LSTM(128, activation='relu', input_shape=(maxlen, vocab)))
+    model.add(LSTM(128, activation='softplus', input_shape=(maxlen, vocab), return_sequences=True ))
+    model.add(LSTM(128, activation='softplus', input_shape=(maxlen, vocab)))
     model.add(Dropout(0.2))
     model.add(Dense(vocab))
     model.add(Activation('softmax'))
