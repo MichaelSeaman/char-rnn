@@ -121,7 +121,7 @@ def main(argv):
     model.add(Dropout(0.2))
     model.add(Dense(vocab))
     model.add(Activation('softmax'))
-    optimizer = RMSprop(lr=LEARNING_RATE, decay=DECAY, clipvalue=0.5)
+    optimizer = Adam(lr=LEARNING_RATE, decay=DECAY, clipvalue=0.5)
     if(WEIGHTS_FILE):
         model.load_weights(WEIGHTS_FILE)
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
