@@ -14,7 +14,7 @@ has at least ~100k characters. ~1M is better.
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout
 from keras.layers import LSTM
-from keras.optimizers import RMSprop
+from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, EarlyStopping, History
 from callback import Generate_Text
 from sklearn.model_selection import train_test_split
@@ -115,8 +115,9 @@ def main(argv):
     # Building a simple LSTM
     print("Building model")
     model = Sequential()
-    model.add(LSTM(128, activation='softplus', input_shape=(maxlen, vocab), return_sequences=True ))
-    model.add(LSTM(128, activation='softplus', input_shape=(maxlen, vocab)))
+    model.add(LSTM(128, input_shape=(maxlen, vocab), return_sequences=True ))
+    model.add(LSTM(128, input_shape=(maxlen, vocab)))
+    model.add(Dense(128))
     model.add(Dropout(0.2))
     model.add(Dense(vocab))
     model.add(Activation('softmax'))
