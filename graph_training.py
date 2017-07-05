@@ -4,7 +4,7 @@ import os
 import getopt
 import sys
 
-HISTORY_FILE = 'model_history_0630-1530.npy'
+HISTORY_FILE = 'model_history_0703-0031.npy'
 
 
 def main(argv):

@@ -12,9 +12,10 @@ has at least ~100k characters. ~1M is better.
 '''
 
 from keras.models import Sequential
+from keras.models import model_from_json
 from keras.layers import Dense, Activation, Dropout
 from keras.layers import LSTM
-from keras.optimizers import RMSprop
+
 
 import numpy as np
 import random
@@ -24,14 +25,16 @@ import getopt
 
 TRAIN_FILE = '/home/ubuntu/Datasets/quote.txt'
 WEIGHTS_FILE = './weights/'
+MODEL_FILE = 'model.json'
 diversity = 1.0
 
 def main(argv):
     global TRAIN_FILE
     global WEIGHTS_FILE
     global diversity
+    global MODEL_FILE
     try:
-        opts, args = getopt.getopt(argv, 't:w:d:', ['trainFile=','weightsFile=','diversity='])
+        opts, args = getopt.getopt(argv, 't:w:d:m:', ['trainFile=','weightsFile=','diversity=','modelFile='])
         for opt, arg in opts:
             if opt in ('-t', '--trainFile'):
                 TRAIN_FILE = arg
@@ -39,6 +42,8 @@ def main(argv):
                 WEIGHTS_FILE = arg
             elif opt in ('-d', '--diversity'):
                 diversity = float(arg)
+            elif opt in ('-m', '--modelFile'):
+                MODEL_FILE = arg
     except getopt.GetoptError as e:
         print("No train/weights file provided")
         print(e)
@@ -48,6 +53,9 @@ def main(argv):
 
     print("Using Weights File: ", WEIGHTS_FILE)
     assert(os.path.exists(WEIGHTS_FILE))
+
+    print("Using Model File: ", MODEL_FILE)
+    assert(os.path.exists(MODEL_FILE))
 
     text = open(TRAIN_FILE).read().lower()
     n_chars = len(text)
@@ -60,27 +68,14 @@ def main(argv):
     char_to_idx = dict( (c, i) for i,c in enumerate(chars) )
     idx_to_char = dict( (i, c) for i,c in enumerate(chars) )
 
-    maxlen = 40
-    step = 3
-    sentences = []
-    next_chars = []
-    for i in range(0, n_chars - maxlen, step):
-        sentences.append(text[i:i+maxlen])
-        next_chars.append(text[i+maxlen])
-
-    n_data = len(sentences)
-    print("Number of sequences: ", n_data)
-
     print("Building model")
-    model = Sequential()
-    model.add(LSTM(128, input_shape=(maxlen, vocab), return_sequences=True ))
-    model.add(LSTM(128, input_shape=(maxlen, vocab)))
-    model.add(Dropout(0.2))
-    model.add(Dense(vocab))
-    model.add(Activation('softmax'))
-    optimizer = RMSprop(lr=0.1)
+    with open(MODEL_FILE) as json_file:
+        model_json = json_file.read()
+    model = model_from_json(model_json)
     model.load_weights(WEIGHTS_FILE)
-    model.compile(loss='categorical_crossentropy', optimizer=optimizer)
+    model.compile(loss='categorical_crossentropy', optimizer='adam')
+
+    maxlen = model.layers[0].batch_input_shape[1]
 
     gen_text_len = int(input('Length of generated text: '))
     output_file = input('Enter output filename (Leave blank to leave text unsaved) : ')
