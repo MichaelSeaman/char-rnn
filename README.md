@@ -60,4 +60,4 @@ This project is licensed under the MIT License.
 
 * Andrej Karpathy
 * Jason Brownlee
-* etc
+* Keras Tutorials
