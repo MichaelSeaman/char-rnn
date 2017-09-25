@@ -103,6 +103,7 @@ ENV/
 
 # Data files
 weights/
+models/
 
 # OSX
 .DS_Store
