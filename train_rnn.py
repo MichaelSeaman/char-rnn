@@ -6,6 +6,7 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping, History
 from callback import Generate_Text
 from sklearn.model_selection import train_test_split
 from rnn import preprocess_text, build_model
+from frequent_flush import Frequent_flush
 
 import numpy as np
 import sys
@@ -25,12 +26,14 @@ LAYER_SIZE = 256
 NUM_LAYERS = 2
 DROPOUT = 0.2
 SEQ_LEN = 40
+BUFFER_OUTPUT = False
 
 # Dealing with runtime options
 def main(argv):
     global TRAIN_FILE
     global MODEL_FILE
     global WEIGHTS_FILE
+    global HISTORY_FILE
     global NUM_EPOCHS
     global QUICK_MODE
     global DECAY
@@ -39,12 +42,14 @@ def main(argv):
     global NUM_LAYERS
     global DROPOUT
     global SEQ_LEN
+    global BUFFER_OUTPUT
     try:
-        opts, args = getopt.getopt(argv, 't:e:qm:w:h:', ['trainFile=','epochs=',
+        opts, args = getopt.getopt(argv, 'i:e:qm:w:h:b', ['inputFile=','epochs=',
             'quickmode' ,'modelFile=', 'weightsFile=','learningRate=','decay=',
-            'numLayers=', 'layerSize=', 'sequenceLength=', 'historyFile='])
+            'numLayers=', 'layerSize=', 'sequenceLength=', 'historyFile=',
+            'bufferOutput', 'dropout='])
         for opt, arg in opts:
-            if opt in ('-t', '--trainFile'):
+            if opt in ('-i', '--inputFile'):
                 TRAIN_FILE = arg
             elif opt in ('-m', '--modelFile'):
                 MODEL_FILE = arg
@@ -68,10 +73,15 @@ def main(argv):
                 DROPOUT = float(arg)
             elif opt == '--sequenceLength':
                 SEQ_LEN = int(arg)
+            elif opt in ('-b', '--bufferOutput'):
+                BUFFER_OUTPUT = True
     except getopt.GetoptError as e:
         print(e)
 
-    print("Using Training File: ", TRAIN_FILE)
+    if(not BUFFER_OUTPUT):
+        Frequent_flush(1).start()
+
+    print("Using Input File: ", TRAIN_FILE)
     print("Preprocessing...")
     X, y, char_to_idx, idx_to_char, vocab, text = preprocess_text(
         filename=TRAIN_FILE, SEQ_LEN=SEQ_LEN)
@@ -103,9 +113,10 @@ def main(argv):
     model.summary()
 
     if(HISTORY_FILE):
+        print("Using history file ", HISTORY_FILE)
         history = np.load(HISTORY_FILE).item()
     else:
-        history = {}
+        history = {'acc':[], 'val_acc':[], 'loss':[], 'val_loss':[]}
 
 
     # Setting up models directory

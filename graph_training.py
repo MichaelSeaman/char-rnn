@@ -4,44 +4,48 @@ import os
 import getopt
 import sys
 
-HISTORY_FILE = 'model_history_0703-0031.npy'
-
+HISTORY_FILE = 'model_history.npy'
 
 def main(argv):
     global HISTORY_FILE
-    try:
-        opts, args = getopt.getopt(argv, 'h:', ['historyFile='])
-        for opt, arg in opts:
-            if opt in ('-h', '--historyFile'):
-                HISTORY_FILE = arg
-    except getopt.GetoptError as e:
-        print("No train/weights file provided")
-        print(e)
+    if(argv):
+        inputFile = argv[0]
 
+
+    if(os.path.isdir(inputFile)):
+        model_name = os.path.basename(inputFile)
+        HISTORY_FILE = os.path.join(inputFile, HISTORY_FILE)
+    else:
+        model_name = 'model'
+        HISTORY_FILE = inputFile
+
+    print("Model: ", model_name)
     print("Using History File: ", HISTORY_FILE)
-    assert(os.path.exists(HISTORY_FILE))
 
-    h = np.load(HISTORY_FILE).item()
 
-    print(h.keys())
+    history = np.load(HISTORY_FILE).item()
+
     # summarize history for accuracy
-    plt.plot(h['acc'])
-    plt.plot(h['val_acc'])
-    plt.title('model accuracy')
+    plt.figure(1)
+    plt.subplot(211)
+    plt.plot(history['acc'])
+    plt.plot(history['val_acc'])
+    plt.title('{model_name} accuracy'.format(model_name=model_name))
     plt.ylabel('accuracy')
-    plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig('model_acc.png')
+
     # summarize history for loss
-    plt.close()
-    plt.plot(h['loss'])
-    plt.plot(h['val_loss'])
-    plt.title('model loss')
+    plt.subplot(212)
+    plt.plot(history['loss'])
+    plt.plot(history['val_loss'])
+    plt.title('{model_name} loss'.format(model_name=model_name))
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'test'], loc='upper left')
-    plt.savefig('model_loss.png')
+    plt.tight_layout()
+    plt.savefig('{model_name}.png'.format(model_name=model_name))
 
+    print("Saved output to ", os.path.abspath(model_name + '.png'))
 
 if __name__ == "__main__":
     main(sys.argv[1:])

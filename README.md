@@ -21,17 +21,7 @@ With the following python modules:
 ## Usage
 To train a new RNN model on a text file TRAIN_FILE:
 ```
-python3 rnn.py -t TRAIN_FILE -e NUM_EPOCHS
-opts, args = getopt.getopt(argv, 't:e:cw:', ['trainFile=','epochs=','continue','weightsFile='])
-for opt, arg in opts:
-    if opt in ('-t', '--trainFile'):
-        TRAIN_FILE = arg
-    elif opt in ('-w', '--weightsFile'):
-        WEIGHTS_FILE = arg
-    elif opt in ('-e', '--epochs'):
-        NUM_EPOCHS = int(arg)
-    elif opt in ('-c', '--continue'):
-        CONTINUE_FROM_PREV = True
+python3 rnn.py -i TRAIN_FILE -e NUM_EPOCHS
 ```
 In order to resume training from previous session, include the `-c` option and add `-w WEIGHTS_FILE` containing your previous weights file.
 
