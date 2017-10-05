@@ -40,8 +40,6 @@ callback.py # Helper function to generate text as training progresses.
 
 * **Michael Seaman** - *Initial work* - [MichaelSeaman](https://github.com/MichaelSeaman)
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
-
 ## License
 
 This project is licensed under the MIT License.
