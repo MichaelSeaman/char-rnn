@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 from keras.models import load_model
-from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, EarlyStopping, History
-from callback import Generate_Text
+from callback import *
 from sklearn.model_selection import train_test_split
-from rnn import preprocess_text, build_model
+from rnn import preprocess_text, build_model, vectorize_data
 from frequent_flush import Frequent_flush
 from model_file import ModelFile
 
@@ -39,8 +38,9 @@ def main(argv):
 
     print("Using Input File: ", training_file)
     print("Preprocessing...")
-    X, y, char_to_idx, idx_to_char, vocab, text = preprocess_text(
-        filename=training_file, SEQ_LEN=SEQ_LEN)
+    char_to_idx, idx_to_char, vocab, text, sentences, next_chars = \
+        preprocess_text(filename=training_file, SEQ_LEN=SEQ_LEN)
+    X, y = vectorize_data(SEQ_LEN, vocab, sentences, char_to_idx, next_chars)
 
     if(quick_mode):
         X = X[:1000]
@@ -55,81 +55,116 @@ def main(argv):
         print("Depth of Network: ", num_layers)
         print("Using dropout: ", dropout)
 
-        model = build_model(NUM_LAYERS=num_layers, SEQ_LEN=seq_len, vocab=vocab,
-            LAYER_SIZE=layer_size, DROPOUT=dropout)
+        model = build_model(num_layers=num_layers, seq_len=seq_len, vocab=vocab,
+            layer_size=layer_size, dropout=dropout, lr=LEARNING_RATE,
+            decay=DECAY)
+
+        model.summary()
+
+        model_dir = create_model_dir(model)
+        print("Saved model data to:", os.path.abspath(model_dir))
 
         history = {'acc':[], 'val_acc':[], 'loss':[], 'val_loss':[]}
-        if not os.path.exists('models'):
-            os.makedirs('models')
-
-        timestr = time.strftime("%m%d-%H%M")
-        model_name = "CharRNN_" + timestr
-        model_dir = os.path.join('models', model_name)
-        if not os.path.exists(model_dir):
-            os.makedirs(model_dir)
-        print("Saving model data to:", os.path.abspath(model_dir))
-        model.save(os.path.join(model_dir, "model.h5"))
         initial_epoch = 0
 
+
     else:
-        model_file = ModelFile(model_directory=model_dir)
-        if(model_file.check_exists()):
-            print("Loading model")
-        else:
-            print("Incomplete model. Make sure that the folder exists and" +
-                " contains weights, history, and model.h5")
-            sys.exit(0)
-
-        model_dir = model_file.model_directory
-        model_filename = model_file.model
-        weights_file = model_file.weights
-        history_file = model_file.history
-
-        model = load_model(model_filename)
-        print("Using weights file ", weights_file)
-        model.load_weights(weights_file)
-        print("Using history file ", history_file)
-        history = np.load(history_file).item()
-        initial_epoch = len(history['acc'])
-        print("Starting from epoch ", initial_epoch)
-
+        model, history, initial_epoch = load_model_dir(model_dir)
+        model.summary()
 
     print("Creating callbacks")
-    weights_filepath = os.path.join(model_dir,
-        "weights-improvement-{epoch:03d}-{loss:.4f}.hdf5")
-    checkpoint = ModelCheckpoint(weights_filepath, save_best_only=True,
-        verbose=1)
-    generate_text = Generate_Text(gen_text_len=300, idx_to_char=idx_to_char,
-        char_to_idx=char_to_idx, text=text, maxlen=seq_len, vocab=vocab)
-    esCallback = EarlyStopping(min_delta=0, patience=10, verbose=1)
-    hisCallback = History()
-    if(quick_mode):
-        callbacks_list = [hisCallback, checkpoint]
-    else:
-        callbacks_list = [hisCallback, checkpoint, generate_text]
-
-    optimizer = Adam(lr=learning_rate, decay=decay, clipvalue=0.5)
-    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-
-    model.summary()
-
+    callbacks_list = create_callbacks(model_dir, writer=True,
+        idx_to_char=idx_to_char, char_to_idx=char_to_idx, text=text,
+        seq_len=SEQ_LEN, vocab=vocab)
 
     print("\nTraining model\n")
+    history = train_model(model, X_train, y_train, X_test, y_test,
+        callbacks_list, num_epochs, history, initial_epoch)
+
+    print("Saving training history")
+    history_filename = os.path.join(model_dir, 'model_history.npy')
+    np.save(history_filename, history)
+
+def create_model_dir(model):
+    if not os.path.exists('models'):
+        os.makedirs('models')
+
+    timestr = time.strftime("%m%d-%H%M")
+    model_name = "CharRNN_" + timestr
+    model_dir = os.path.join('models', model_name)
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+    model.save(os.path.join(model_dir, "model.h5"))
+    return model_dir
+
+def load_model_dir(model_dir):
+    model_file = ModelFile(model_directory=model_dir)
+    if(model_file.check_exists()):
+        print("Loading model")
+    else:
+        print("Incomplete model. Make sure that the folder exists and" +
+            " contains weights, history, and model.h5")
+        sys.exit(0)
+
+    model_dir = model_file.model_directory
+    model_filename = model_file.model
+    weights_file = model_file.weights
+    history_file = model_file.history
+
+    model = load_model(model_filename)
+    print("Using weights file ", weights_file)
+    model.load_weights(weights_file)
+    print("Using history file ", history_file)
+    history = np.load(history_file).item()
+    initial_epoch = len(history['acc'])
+    print("Starting from epoch ", initial_epoch)
+    return model,history,initial_epoch
+
+def create_callbacks(model_dir, history=True, checkp=True, earlyStop=False,
+        writer=False, idx_to_char = {}, char_to_idx = {}, text = "",
+        seq_len = 300 , vocab = 0):
+    callbacks = []
+    weights_filepath = os.path.join(model_dir,
+        "weights-improvement-{epoch:03d}-{loss:.4f}.hdf5")
+
+    composition_dir = os.path.join(model_dir, 'compositions')
+    composition_filepath = os.path.join(composition_dir,
+        "epoch_{epoch:03d}_composition_reduced.txt")
+
+    checkpoint = ModelCheckpoint(weights_filepath, save_best_only=True,
+        verbose=1)
+    esCallback = EarlyStopping(min_delta=0, patience=10, verbose=1)
+    hisCallback = History()
+    writerCallback = Write_Text(idx_to_char, char_to_idx, text, seq_len, vocab,
+            filepath=composition_filepath)
+    if history:
+        callbacks.append(hisCallback)
+    if checkp:
+        callbacks.append(checkpoint)
+    if earlyStop:
+        callbacks.append(esCallback)
+    if writer:
+        if not os.path.exists(composition_dir):
+            os.makedirs(composition_dir)
+        callbacks.append(writerCallback)
+
+    return callbacks
+
+def train_model(model, X_train, y_train, X_test, y_test, callbacks_list,
+ num_epochs, history, initial_epoch=0):
     for e in range(num_epochs):
         epochs = e + initial_epoch
         try:
             print("\nEPOCH {}\n".format(epochs))
             hist = model.fit(X_train, y_train, validation_data=(X_test,y_test),
-                batch_size=128, epochs=1, callbacks=callbacks_list,
-                initial_epoch = initial_epoch)
+                batch_size=128, epochs=epochs+1, callbacks=callbacks_list,
+                initial_epoch=epochs)
             for k, v in hist.history.items():
                 history[k] = history[k] + v
         except KeyboardInterrupt:
             print("Exiting training loop")
             break
-    print("Saving training history")
-    history_filename = os.path.join(model_dir, 'model_history.npy')
-    np.save(history_filename, history)
+    return history
 
 def parse_options(argv):
     '''

@@ -10,7 +10,9 @@ def main(argv):
     global HISTORY_FILE
     if(argv):
         inputFile = argv[0]
-
+    else:
+        print("History file or model directory needed")
+        sys.exit(0)
 
     if(os.path.isdir(inputFile)):
         model_name = os.path.basename(inputFile)
@@ -24,7 +26,11 @@ def main(argv):
 
 
     history = np.load(HISTORY_FILE).item()
+    plot_history(history, model_name)
 
+    print("Saved output to ", os.path.abspath(model_name + '.png'))
+
+def plot_history(history, model_name):
     # summarize history for accuracy
     plt.figure(1)
     plt.subplot(211)
@@ -44,8 +50,6 @@ def main(argv):
     plt.legend(['train', 'test'], loc='upper left')
     plt.tight_layout()
     plt.savefig('{model_name}.png'.format(model_name=model_name))
-
-    print("Saved output to ", os.path.abspath(model_name + '.png'))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
