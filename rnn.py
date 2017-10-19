@@ -6,7 +6,7 @@ from keras.utils import np_utils
 import numpy as np
 
 def preprocess_text(filename, SEQ_LEN):
-    text = open(filename).read().lower()
+    text = open(filename).read()
     n_chars = len(text)
     chars = sorted(list(set(text)))
     vocab = len(chars)

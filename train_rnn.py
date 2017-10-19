@@ -23,7 +23,7 @@ DECAY = .5
 LAYER_SIZE = 256
 NUM_LAYERS = 2
 DROPOUT = 0.2
-SEQ_LEN = 40
+SEQ_LEN = 90
 BUFFER_OUTPUT = False
 
 # Dealing with runtime options
@@ -45,6 +45,9 @@ def main(argv):
     if(quick_mode):
         X = X[:1000]
         y = y[:1000]
+
+    print("Using SEQ_LEN of", SEQ_LEN)
+    print("Vocab size:", vocab)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
